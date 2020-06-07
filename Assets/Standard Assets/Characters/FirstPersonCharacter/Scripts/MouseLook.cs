@@ -17,8 +17,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
         public bool lockCursor = true;
 
 
-        private Quaternion m_CharacterTargetRot;
-        private Quaternion m_CameraTargetRot;
+        public Quaternion m_CharacterTargetRot;
+        public Quaternion m_CameraTargetRot;
         private bool m_cursorIsLocked = true;
 
         public void Init(Transform character, Transform camera)
@@ -30,8 +30,16 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
         public void LookRotation(Transform character, Transform camera)
         {
-            float yRot = CrossPlatformInputManager.GetAxis("Mouse X") * XSensitivity;
-            float xRot = CrossPlatformInputManager.GetAxis("Mouse Y") * YSensitivity;
+            float yRot = CrossPlatformInputManager.GetAxis("Camera X") * XSensitivity;
+            float xRot = CrossPlatformInputManager.GetAxis("Camera Y") * YSensitivity;
+
+            if (Mathf.Approximately(yRot, 0) && Mathf.Approximately(xRot, 0))
+            {
+                yRot = CrossPlatformInputManager.GetAxis("Mouse X") * XSensitivity;
+                xRot = CrossPlatformInputManager.GetAxis("Mouse Y") * YSensitivity;
+            }
+
+            //TODO read joystick look too
 
             m_CharacterTargetRot *= Quaternion.Euler (0f, yRot, 0f);
             m_CameraTargetRot *= Quaternion.Euler (-xRot, 0f, 0f);

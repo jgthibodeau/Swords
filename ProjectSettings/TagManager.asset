@@ -3,7 +3,11 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - Breakable
+  - Projectile
+  - Explosive
+  - Sliceable
   layers:
   - Default
   - TransparentFX
@@ -14,18 +18,18 @@ TagManager:
   - 
   - 
   - PostProcessing
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Breakable
+  - Player
+  - Enemy
+  - Sword
+  - PhysicsPusher
+  - PhysicsObject
+  - Sliceable
+  - Grapple
+  - Thrown
+  - Wall
+  - CloseCamera
+  - Ground
   - 
   - 
   - 

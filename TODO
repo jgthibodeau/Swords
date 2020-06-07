@@ -1,0 +1,27 @@
+* killable debris
+	* life time
+	* max life time
+	* gain life time per physics interaction
+	* if life time < 0
+		* destroy
+
+* limit on number of sliced objects
+	* destroy when too many
+
+* grappling hook
+	* allow grappling anywhere along ledges
+
+* double tap to rotate 90/180 degrees
+
+* destruction meter = health
+	* constantly decreasing
+	* decrease when using an ability?
+	* increase on destroying an object
+
+* zip line
+
+* guards
+	* constantly on your tail, kind of like snake?
+	* have difficulty navigating destroyed objects
+
+* move "swinging" bool logic into the swordObject code
