@@ -85,7 +85,7 @@ public class LockOnController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         GetInput();
 
@@ -121,8 +121,10 @@ public class LockOnController : MonoBehaviour
             fpsController.m_MouseLook.YSensitivity = 0;
             fpsController.m_ManuallyRotate = true;
 
-            fpsController.transform.localRotation = Quaternion.Slerp(fpsController.transform.localRotation, fpsControllerRotation, Time.deltaTime * lockSpeed);
-            fpsCamera.localRotation = Quaternion.Slerp(fpsCamera.localRotation, fpsCameraRotation, Time.deltaTime * lockSpeed);
+            //fpsController.transform.localRotation = Quaternion.Slerp(fpsController.transform.localRotation, fpsControllerRotation, Time.deltaTime * lockSpeed);
+            //fpsCamera.localRotation = Quaternion.Slerp(fpsCamera.localRotation, fpsCameraRotation, Time.deltaTime * lockSpeed);
+            fpsController.transform.localRotation = fpsControllerRotation;
+            fpsCamera.localRotation = fpsCameraRotation;
 
             fpsController.m_MouseLook.m_CharacterTargetRot = fpsController.transform.localRotation;
             fpsController.m_MouseLook.m_CameraTargetRot = fpsCamera.localRotation;

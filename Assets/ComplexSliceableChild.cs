@@ -31,7 +31,7 @@ public class ComplexSliceableChild : SliceableObject
 
     public ComplexSliceableParent parent;
 
-    void Start()
+    void Awake()
     {
         parent = GetComponentInParent<ComplexSliceableParent>();
     }

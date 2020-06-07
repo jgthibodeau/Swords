@@ -260,6 +260,7 @@ MonoBehaviour:
     scalePitch: 1
   bladeBase: {fileID: 5455576411343426089}
   bladeTip: {fileID: 5455576411305393539}
+  canSlice: 0
   trailColor:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}
@@ -289,13 +290,13 @@ MonoBehaviour:
     m_Mode: 0
     m_NumColorKeys: 2
     m_NumAlphaKeys: 2
-  moveSpeed: 100
+  moveSpeed: 10
   rotateSpeed: 1
   isUsable: 0
   drawSound: {fileID: 0}
   length: 3
   radius: 0.1
-  swingSpeed: 5
+  swingSpeed: 10
 --- !u!1 &5455576411305393540
 GameObject:
   m_ObjectHideFlags: 0

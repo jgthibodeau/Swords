@@ -6,7 +6,7 @@ public class ComplexSliceableAnchor : MonoBehaviour
 {
     public ComplexSliceableParent parent;
 
-    void Start()
+    void Awake()
     {
         parent = GetComponentInParent<ComplexSliceableParent>();
     }

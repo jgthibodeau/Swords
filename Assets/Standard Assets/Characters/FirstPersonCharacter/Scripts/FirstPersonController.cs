@@ -10,28 +10,41 @@ namespace UnityStandardAssets.Characters.FirstPerson
     [RequireComponent(typeof (AudioSource))]
     public class FirstPersonController : MonoBehaviour
     {
-        public enum WalkState { WALK, RUN, SLIDE, CROUCH }
+        public enum WalkState { WALK, RUN, SLIDE, CROUCH, DASH }
+
+        [System.Serializable]
+        public class MovementInfo
+        {
+            public float acceleration;
+            public float speed;
+            [Range(0f, 1f)]
+            public float stepLength;
+        }
+
+        public MovementInfo walkInfo, runInfo, slideInfo, dashInfo;
         
         [SerializeField] private WalkState m_WalkState = WalkState.WALK;
         [SerializeField] public bool m_CanWalk = true;
         [SerializeField] public float m_GroundAcceleration;
-        [SerializeField] public float m_RunAcceleration;
-        [SerializeField] public float m_SlideAcceleration;
+        //[SerializeField] public float m_RunAcceleration;
+        //[SerializeField] public float m_SlideAcceleration;
+        //[SerializeField] public float m_DashAcceleration;
         [SerializeField] public float m_AirAcceleration;
         [SerializeField] public float m_JumpAirAcceleration;
         [SerializeField] private float m_NormalHeight;
         [SerializeField] private float m_CrouchHeight;
         [SerializeField] private float m_HeightChangeSpeed;
         [SerializeField] public float m_CurrentSpeed;
-        [SerializeField] private float m_WalkSpeed;
-        [SerializeField] private float m_RunSpeed;
-        [SerializeField] private float m_SlideSpeed;
+        //[SerializeField] private float m_WalkSpeed;
+        //[SerializeField] private float m_RunSpeed;
+        //[SerializeField] private float m_SlideSpeed;
         [SerializeField] private float m_SlideTime;
         [SerializeField] private float m_SlideElapsedTime;
         [SerializeField] private float m_RunDoubleTapTime;
-        [SerializeField] [Range(0f, 1f)] private float m_WalkStepLength = 1f;
-        [SerializeField] [Range(0f, 1f)] private float m_RunStepLength = 0.7f;
-        [SerializeField] [Range(0f, 1f)] private float m_SprintStepLength = 0.5f;
+        //[SerializeField] [Range(0f, 1f)] private float m_WalkStepLength = 1f;
+        //[SerializeField] [Range(0f, 1f)] private float m_RunStepLength = 0.7f;
+        //[SerializeField] [Range(0f, 1f)] private float m_SprintStepLength = 0.5f;
+        //[SerializeField] [Range(0f, 1f)] private float m_DashStepLength = 0.7f;
         [SerializeField] private float m_JumpSpeed;
         [SerializeField] private float m_StickToGroundForce;
         [SerializeField] public bool m_EnableGravity;
@@ -205,18 +218,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
                 float acceleration = m_GroundAcceleration;
                 if (m_CharacterController.isGrounded)
                 {
-                    switch (m_WalkState)
-                    {
-                        case WalkState.WALK:
-                            acceleration = m_GroundAcceleration;
-                            break;
-                        case WalkState.RUN:
-                            acceleration = m_RunAcceleration;
-                            break;
-                        case WalkState.SLIDE:
-                            acceleration = m_SlideAcceleration;
-                            break;
-                    }
+                    acceleration = GetMovementInfo().acceleration;
                 } else
                 {
                     if (m_Jumping)
@@ -269,26 +271,27 @@ namespace UnityStandardAssets.Characters.FirstPerson
             m_AudioSource.Play();
         }
 
-
-        private float GetStepLength()
+        private MovementInfo GetMovementInfo()
         {
-            float stepSpeed = m_WalkStepLength;
-            if (m_WalkState == WalkState.RUN)
+            switch (m_WalkState)
             {
-                stepSpeed = m_RunStepLength;
+                case WalkState.RUN:
+                    return runInfo;
+                case WalkState.DASH:
+                    return dashInfo;
+                case WalkState.SLIDE:
+                    return slideInfo;
+                case WalkState.WALK:
+                default:
+                    return walkInfo;
             }
-            else if (m_WalkState == WalkState.SLIDE)
-            {
-                stepSpeed = m_SprintStepLength;
-            }
-            return stepSpeed;
         }
 
         private void ProgressStepCycle(float speed)
         {
             if (m_CharacterController.velocity.sqrMagnitude > 0 && (m_Input.x != 0 || m_Input.y != 0))
             {
-                m_StepCycle += (m_CharacterController.velocity.magnitude + GetStepLength()) * Time.deltaTime;
+                m_StepCycle += (m_CharacterController.velocity.magnitude + GetMovementInfo().stepLength) * Time.deltaTime;
             }
 
             if (!(m_StepCycle > m_NextStep))
@@ -328,7 +331,7 @@ namespace UnityStandardAssets.Characters.FirstPerson
             }
             if (m_CharacterController.velocity.magnitude > 0 && m_CharacterController.isGrounded)
             {
-                m_Camera.transform.localPosition = m_HeadBob.DoHeadBob(m_CharacterController.velocity.magnitude + (speed * GetStepLength()));
+                m_Camera.transform.localPosition = m_HeadBob.DoHeadBob(m_CharacterController.velocity.magnitude + (speed * GetMovementInfo().stepLength));
                 newCameraPosition = m_Camera.transform.localPosition;
                 newCameraPosition.y = m_Camera.transform.localPosition.y - m_JumpBob.Offset();
             }
@@ -360,20 +363,8 @@ namespace UnityStandardAssets.Characters.FirstPerson
             WalkState previousWalkState = m_WalkState;
 
             UpdateWalkState();
-            
-            switch (m_WalkState)
-            {
-                case WalkState.SLIDE:
-                    //m_CurrentSpeed = m_SlideSpeed;
-                    m_CurrentSpeed = ConvertRange(m_SlideElapsedTime, 0, m_SlideTime, m_SlideSpeed, m_WalkSpeed);
-                    break;
-                case WalkState.RUN:
-                    m_CurrentSpeed = m_RunSpeed;
-                    break;
-                default:
-                    m_CurrentSpeed = m_WalkSpeed;
-                    break;
-            }
+
+            m_CurrentSpeed = GetCurrentSpeed();
 
             // handle speed change to give an fov kick
             // only if the player is going to a run, is running and the fovkick is to be used
@@ -384,12 +375,81 @@ namespace UnityStandardAssets.Characters.FirstPerson
             //}
         }
 
+        private float GetCurrentSpeed()
+        {
+            if (m_WalkState == WalkState.SLIDE)
+            {
+                return ConvertRange(m_SlideElapsedTime, 0, m_SlideTime, slideInfo.speed, walkInfo.speed);
+            }
+            else
+            {
+                return GetMovementInfo().speed;
+            }
+        }
+
         private float ConvertRange(float oldValue, float oldMin, float oldMax, float newMin, float newMax)
         {
             return (((oldValue - oldMin) * (newMax - newMin)) / (oldMax - oldMin)) + newMin;
         }
 
         float runDoubleTapTimer;
+        //private void UpdateWalkState()
+        //{
+        //    bool run = CrossPlatformInputManager.GetButton("Run");
+        //    bool runPressed = CrossPlatformInputManager.GetButtonDown("Run");
+        //    bool runReleased = CrossPlatformInputManager.GetButtonUp("Run");
+
+        //    if (m_Input.magnitude > 0)
+        //    {
+
+        //        switch (m_WalkState)
+        //        {
+        //            case WalkState.WALK:
+        //                if (run)
+        //                {
+        //                    m_WalkState = WalkState.RUN;
+        //                }
+        //                break;
+        //            case WalkState.RUN:
+        //                //if (!run)
+        //                //{
+        //                //    m_WalkState = WalkState.WALK;
+        //                //}
+
+
+        //                if (m_Slide)
+        //                {
+        //                    m_SlideElapsedTime = 0f;
+        //                    m_WalkState = WalkState.SLIDE;
+        //                }
+
+        //                if (runReleased)
+        //                {
+        //                    runDoubleTapTimer = Time.time;
+        //                }
+        //                else if (!run && Time.time - runDoubleTapTimer > m_RunDoubleTapTime)
+        //                {
+        //                    m_WalkState = WalkState.WALK;
+        //                }
+        //                break;
+        //            case WalkState.SLIDE:
+        //                m_Sliding = true;
+
+        //                m_SlideElapsedTime += Time.deltaTime;
+
+        //                if (!m_CharacterController.isGrounded || m_SlideElapsedTime > m_SlideTime)
+        //                {
+        //                    m_Sliding = false;
+        //                    m_WalkState = WalkState.WALK;
+        //                }
+        //                break;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        m_WalkState = WalkState.WALK;
+        //    }
+        //}
         private void UpdateWalkState()
         {
             bool run = CrossPlatformInputManager.GetButton("Run");
@@ -398,7 +458,12 @@ namespace UnityStandardAssets.Characters.FirstPerson
 
             if (m_Input.magnitude > 0)
             {
-
+                //TODO
+                //if dashing -> do dash
+                //else if not dashing and run pressed -> start dash
+                //else if not dashing and run held -> run
+                //else -> walk
+                
                 switch (m_WalkState)
                 {
                     case WalkState.WALK:
@@ -408,12 +473,6 @@ namespace UnityStandardAssets.Characters.FirstPerson
                         }
                         break;
                     case WalkState.RUN:
-                        //if (!run)
-                        //{
-                        //    m_WalkState = WalkState.WALK;
-                        //}
-
-
                         if (m_Slide)
                         {
                             m_SlideElapsedTime = 0f;

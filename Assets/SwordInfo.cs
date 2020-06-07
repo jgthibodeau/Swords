@@ -10,6 +10,8 @@ public class SwordInfo : MonoBehaviour
     public Transform bladeBase;
     public Transform bladeTip;
 
+    public bool canSlice = true;
+
     public Gradient trailColor;
 
     public float moveSpeed = 100;

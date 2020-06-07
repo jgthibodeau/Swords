@@ -16,6 +16,10 @@ public class SwordObject : MonoBehaviour
     public float minWaypointDistance;
     public int maxWayPoints;
     public List<Waypoint> waypoints = new List<Waypoint>();
+    
+    public bool smoothWaypoints;
+    [Range(0, 1)]
+    public float waypointSmoothness = 0.5f;
 
     public Transform modelHolder;
     public Rigidbody rb;
@@ -117,16 +121,93 @@ public class SwordObject : MonoBehaviour
             {
                 waypoints.RemoveAt(0);
             }
+
+            if (smoothWaypoints)
+            {
+                SmoothWaypoints();
+            }
         }
     }
+
+    private void SmoothWaypoints()
+    {
+        List<Waypoint> points;
+        List<Waypoint> curvedPoints;
+        int pointsLength = 0;
+        int curvedLength = 0;
+        
+        pointsLength = waypoints.Count;
+
+        curvedLength = (pointsLength * Mathf.RoundToInt(waypointSmoothness)) - 1;
+        if (curvedLength <= 0)
+        {
+            return;
+        }
+        curvedPoints = new List<Waypoint>(curvedLength);
+
+        float t = 0.0f;
+        for (int pointInTimeOnCurve = 0; pointInTimeOnCurve < curvedLength + 1; pointInTimeOnCurve++)
+        {
+            t = Mathf.InverseLerp(0, curvedLength, pointInTimeOnCurve);
+
+            points = new List<Waypoint>(waypoints);
+
+            for (int j = pointsLength - 1; j > 0; j--)
+            {
+                for (int i = 0; i < j; i++)
+                {
+                    points[i].position = (1 - t) * points[i].position + t * points[i + 1].position;
+                    //points[i].rotation = (1 - t) * points[i].rotation + t * points[i + 1].rotation;
+                }
+            }
+
+            curvedPoints.Add(points[0]);
+        }
+
+        waypoints = curvedPoints;
+    }
+
+
+
 
     void FixedUpdate()
     {
         if (waypoints.Count > 0)
         {
+            ////move to next waypoint
+            //Waypoint currentWaypoint = waypoints[0];
+            //while (waypoints.Count > 0 && Vector3.Distance(transform.position, currentWaypoint.position) < minWaypointDistance)
+            //{
+            //    waypoints.RemoveAt(0);
+            //    if (waypoints.Count > 0)
+            //    {
+            //        currentWaypoint = waypoints[0];
+            //    }
+            //}
+
+            //Vector3 desiredPosition = currentWaypoint.position;
+            //Quaternion desiredRotation = currentWaypoint.rotation;
+            //bool swinging = currentWaypoint.swinging;
+
+            //if (swinging && Vector3.Distance(transform.position, desiredPosition) >= minWaypointDistance)
+            //{
+            //    desiredPosition = Vector3.MoveTowards(rb.position, desiredPosition, Time.fixedDeltaTime * swordInfo.moveSpeed);
+            //    desiredRotation = Quaternion.RotateTowards(rb.rotation, desiredRotation, Time.fixedDeltaTime * swordInfo.rotateSpeed);
+
+            //    rb.MovePosition(desiredPosition);
+            //    rb.MoveRotation(desiredRotation);
+            //} else
+            //{
+            //    rb.position = desiredPosition;
+            //    rb.rotation = desiredRotation;
+
+            //    rb.velocity = Vector3.zero;
+            //    rb.angularVelocity = Vector3.zero;
+            //}
+
             //move to next waypoint
             Waypoint currentWaypoint = waypoints[0];
-            while (waypoints.Count > 0 && Vector3.Distance(transform.position, currentWaypoint.position) < minWaypointDistance)
+            while (waypoints.Count > 0 && Vector3.Distance(transform.localPosition, currentWaypoint.position) < minWaypointDistance)
             {
                 waypoints.RemoveAt(0);
                 if (waypoints.Count > 0)
@@ -137,18 +218,21 @@ public class SwordObject : MonoBehaviour
 
             Vector3 desiredPosition = currentWaypoint.position;
             Quaternion desiredRotation = currentWaypoint.rotation;
+            bool swinging = currentWaypoint.swinging;
 
-            if (Vector3.Distance(transform.position, desiredPosition) >= minWaypointDistance)
-            {
-                desiredPosition = Vector3.MoveTowards(rb.position, desiredPosition, Time.fixedDeltaTime * swordInfo.moveSpeed);
-                desiredRotation = Quaternion.RotateTowards(rb.rotation, desiredRotation, Time.fixedDeltaTime * swordInfo.rotateSpeed);
+            Vector3 worldPos = transform.parent.TransformPoint(desiredPosition);
+            Quaternion worldRot = transform.parent.rotation * desiredRotation;
 
-                rb.MovePosition(desiredPosition);
-                rb.MoveRotation(desiredRotation);
-            } else
+            if (Vector3.Distance(transform.localPosition, desiredPosition) >= minWaypointDistance)
             {
-                rb.position = desiredPosition;
-                rb.rotation = desiredRotation;
+                float speed = swinging ? swordInfo.swingSpeed : swordInfo.moveSpeed;
+                rb.MovePosition(Vector3.MoveTowards(rb.position, worldPos, Time.fixedDeltaTime * speed));
+                rb.MoveRotation(Quaternion.RotateTowards(rb.rotation, worldRot, Time.fixedDeltaTime * speed));
+            }
+            else
+            {
+                rb.position = worldPos;
+                rb.rotation = worldRot;
 
                 rb.velocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
@@ -160,7 +244,7 @@ public class SwordObject : MonoBehaviour
     {
         if ((disableWhenNotSwinging || sword.swinging) && !disabledColliders.Contains(other))
         {
-            if (other.gameObject.tag == "Sliceable")
+            if (swordInfo.canSlice && other.gameObject.tag == "Sliceable")
             {
                 Debug.Log("slicing " + other.gameObject);
                 Vector3 sliceNormal = Vector3.Cross(transform.forward, rb.velocity.normalized);

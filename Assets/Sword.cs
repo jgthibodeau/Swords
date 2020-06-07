@@ -108,7 +108,8 @@ public class Sword : MonoBehaviour
         }
 
         SwordObject.Waypoint waypoint = new SwordObject.Waypoint();
-        swordObject.AddWayPoint(transform.position, swordRotateObject.rotation, swinging);
+        //swordObject.AddWayPoint(transform.position, swordRotateObject.rotation, swinging);
+        swordObject.AddWayPoint(transform.localPosition, swordRotateObject.localRotation * transform.localRotation, swinging);
 
         //rb.mass = swinging ? swingMass : defaultMass;
 
@@ -125,7 +126,10 @@ public class Sword : MonoBehaviour
         Vector3 previousSwordPosition = swordDamagePoint.position;
 
         Vector2 rawMouse = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * mouseSensitivity;
-        rawMouse = Vector2.ClampMagnitude(rawMouse, mouseMaxMagnitude);
+        if (mouseMaxMagnitude > 0)
+        {
+            rawMouse = Vector2.ClampMagnitude(rawMouse, mouseMaxMagnitude);
+        }
         mouse = Vector2.ClampMagnitude(mouse + rawMouse, 1);
 
 
